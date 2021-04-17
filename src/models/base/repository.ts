@@ -19,10 +19,8 @@ import {
 } from 'firebase/firestore'
 import { firestore } from '../../modules/firebase'
 
-export class BaseRepository<T> {
-  get collectionName(): string {
-    throw new Error('you should override collectionName')
-  }
+export abstract class BaseRepository<T> {
+  abstract get collectionName(): string
 
   get collectionReference() {
     return collection(firestore, this.collectionName) as CollectionReference<T>
