@@ -6,6 +6,7 @@ export class PostEntity extends ValidatableEntity<Post> {
   }
 
   validate(): typeof PostEntity.prototype.errors {
+    this.errors = {}
     if (this.data.title.length > 30) this.addError('title', 'タイトルは30文字以下にしてください')
     if (this.data.body.length > 100000) this.addError('body', '本文が長すぎます')
     if (this.data.createdAt > new Date()) this.addError('createdAt', '未来の日付は選択できません')
