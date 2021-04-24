@@ -8,7 +8,6 @@ import {
   getDoc,
   getDocs,
   query,
-  Query,
   limit as limitFn,
   orderBy as orderByFn,
   updateDoc,
@@ -22,31 +21,30 @@ import { firestore } from '../../modules/firebase'
 export abstract class BaseRepository<T> {
   abstract get collectionName(): string
 
-  get collectionReference() {
+  get collectionReference(): CollectionReference<T> {
     return collection(firestore, this.collectionName) as CollectionReference<T>
   }
 
-  protected getDocById(id: string) {
+  protected getDocById(id: string): DocumentReference<T> {
     return doc(firestore, `${this.collectionReference.path}/${id}`) as DocumentReference<T>
   }
 
-  async find(id: string) {
+  async find(id: string): Promise<(T & { id: string }) | undefined> {
     const doc = this.getDocById(id)
     const snap = await getDoc(doc)
-    return { ...snap.data(), id: snap.id }
+    const data = snap.data()
+    if (data === undefined) return undefined
+
+    return { ...data, id: snap.id }
   }
 
-  async all({
-    limit,
-    orderBy,
-    offset,
-    whereConditions,
-  }: {
+  async all(options?: {
     limit?: number
     orderBy?: keyof T
     offset?: number
     whereConditions?: [keyof T, WhereFilterOp, unknown][]
-  }) {
+  }): Promise<(T & { id: string })[]> {
+    const { limit, orderBy, offset, whereConditions } = options ?? {}
     const queries: QueryConstraint[] = []
     if (limit) queries.push(limitFn(limit))
     if (orderBy) queries.push(orderByFn(orderBy as string))
@@ -59,16 +57,16 @@ export abstract class BaseRepository<T> {
     return snap.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
   }
 
-  async create(data: T) {
+  async create(data: T): Promise<string> {
     const doc = await addDoc(this.collectionReference, data)
     return doc.id
   }
 
-  async update(id: string, data: Partial<T>) {
+  async update(id: string, data: Partial<T>): Promise<void> {
     await updateDoc(this.getDocById(id), data)
   }
 
-  async delete(id: string) {
+  async delete(id: string): Promise<void> {
     await deleteDoc(this.getDocById(id))
   }
 }
